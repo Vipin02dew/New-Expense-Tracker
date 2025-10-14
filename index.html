@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Expense Tracker - Track your expenses, split bills, and achieve savings goals">
+    <meta name="theme-color" content="#6366f1">
+    <title>Expense Tracker</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Landing/Onboarding Screen -->
+        <div id="landing-screen" class="screen active">
+            <div class="landing-container">
+                <div class="logo-section">
+                    <div class="app-logo">💰</div>
+                    <h1>Expense Tracker</h1>
+                    <p class="tagline">Track, Split, Save - All in One Place</p>
+                </div>
+                
+                <div class="features-overview">
+                    <div class="feature-item">
+                        <span class="feature-icon">📊</span>
+                        <p>Visual Analytics</p>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">👥</span>
+                        <p>Group Splitting</p>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">🎯</span>
+                        <p>Savings Goals</p>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">🏆</span>
+                        <p>Achievements</p>
+                    </div>
+                </div>
+
+                <div class="landing-actions">
+                    <button class="btn btn-primary" onclick="startApp()">Get Started</button>
+                    <button class="btn btn-secondary" onclick="showScreen('join-group-screen')">Join Group</button>
+                </div>
+
+                <button class="install-prompt" id="install-button" style="display: none;">
+                    <span>📱</span> Install App
+                </button>
+            </div>
+        </div>
+
+        <!-- Dashboard Screen -->
+        <div id="dashboard-screen" class="screen">
+            <header class="app-header">
+                <div class="header-user">
+                    <img id="header-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%236366f1'/%3E%3Ctext x='50' y='50' text-anchor='middle' dy='.3em' fill='white' font-size='40' font-family='Arial'%3EU%3C/text%3E%3C/svg%3E" alt="Profile" class="avatar-small" onclick="showScreen('profile-screen')">
+                    <div>
+                        <p class="greeting">Hello, <span id="user-name">User</span>!</p>
+                        <p class="date-display" id="current-date"></p>
+                    </div>
+                </div>
+                <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">🌙</button>
+            </header>
+
+            <div class="kpi-section">
+                <div class="kpi-card">
+                    <div class="kpi-label">Today's Spend</div>
+                    <div class="kpi-value" id="today-spend">₹0</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">This Month</div>
+                    <div class="kpi-value" id="month-spend">₹0</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Avg. Daily</div>
+                    <div class="kpi-value" id="avg-daily">₹0</div>
+                </div>
+                <div class="kpi-card highlight">
+                    <div class="kpi-label">Budget Left</div>
+                    <div class="kpi-value" id="budget-left">₹0</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="budget-progress"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="streak-display" id="streak-display">
+                <span>🔥</span> <span id="streak-count">0</span> day streak
+            </div>
+
+            <div class="chart-section">
+                <h3>Weekly Spending Trend</h3>
+                <canvas id="weekly-chart"></canvas>
+            </div>
+
+            <div class="chart-section">
+                <h3>Monthly Category Breakdown</h3>
+                <canvas id="category-chart"></canvas>
+            </div>
+
+            <div class="top-expenses">
+                <h3>Top 5 Expenses (This Month)</h3>
+                <div id="top-expenses-list"></div>
+            </div>
+
+            <nav class="bottom-nav">
+                <button class="nav-item active" onclick="showScreen('dashboard-screen')">
+                    <span>🏠</span>
+                    <span>Home</span>
+                </button>
+                <button class="nav-item" onclick="showScreen('transactions-screen')">
+                    <span>📝</span>
+                    <span>Transactions</span>
+                </button>
+                <button class="nav-item add-btn" onclick="showScreen('add-expense-screen')">
+                    <span>+</span>
+                </button>
+                <button class="nav-item" onclick="showScreen('goals-screen')">
+                    <span>🎯</span>
+                    <span>Goals</span>
+                </button>
+                <button class="nav-item" onclick="showScreen('profile-screen')">
+                    <span>👤</span>
+                    <span>Profile</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Transactions Screen -->
+        <div id="transactions-screen" class="screen">
+            <header class="screen-header">
+                <button class="back-btn" onclick="showScreen('dashboard-screen')">←</button>
+                <h2>Transactions</h2>
+                <button class="icon-btn" onclick="showSearchFilter()">🔍</button>
+            </header>
+
+            <div class="search-filter" id="search-filter" style="display: none;">
+                <input type="text" id="search-input" placeholder="Search transactions..." oninput="filterTransactions()">
+                <select id="category-filter" onchange="filterTransactions()">
+                    <option value="">All Categories</option>
+                </select>
+            </div>
+
+            <div id="transactions-list" class="transactions-list"></div>
+
+            <nav class="bottom-nav">
+                <button class="nav-item" onclick="showScreen('dashboard-screen')">
+                    <span>🏠</span>
+                    <span>Home</span>
+                </button>
+                <button class="nav-item active" onclick="showScreen('transactions-screen')">
+                    <span>📝</span>
+                    <span>Transactions</span>
+                </button>
+                <button class="nav-item add-btn" onclick="showScreen('add-expense-screen')">
+                    <span>+</span>
+                </button>
+                <button class="nav-item" onclick="showScreen('goals-screen')">
+                    <span>🎯</span>
+                    <span>Goals</span>
+                </button>
+                <button class="nav-item" onclick="showScreen('profile-screen')">
+                    <span>👤</span>
+                    <span>Profile</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Add Expense Screen -->
+        <div id="add-expense-screen" class="screen">
+            <header class="screen-header">
+                <button class="back-btn" onclick="showScreen('dashboard-screen')">←</button>
+                <h2>Add Expense</h2>
+                <button class="icon-btn" onclick="saveExpense()">✓</button>
+            </header>
+
+            <form id="expense-form" class="expense-form" onsubmit="saveExpense(event)">
+                <div class="form-group">
+                    <label>Amount</label>
+                    <input type="number" id="expense-amount" placeholder="₹0" required step="0.01">
+                </div>
+
+                <div class="form-group">
+                    <label>Item/Description</label>
+                    <input type="text" id="expense-description" placeholder="What did you buy?" required oninput="suggestCategory()">
+                    <div id="category-suggestions" class="suggestions"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="expense-category" required>
+                        <option value="">Select category</option>
+                        <option value="Food">🍔 Food</option>
+                        <option value="Transport">🚗 Transport</option>
+                        <option value="Shopping">🛍️ Shopping</option>
+                        <option value="Entertainment">🎬 Entertainment</option>
+                        <option value="Bills">📄 Bills</option>
+                        <option value="Healthcare">⚕️ Healthcare</option>
+                        <option value="Education">📚 Education</option>
+                        <option value="Other">📦 Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Date</label>
+                    <input type="date" id="expense-date" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="is-group-expense">
+                        <span>Group Expense</span>
+                    </label>
+                </div>
+
+                <div id="group-expense-options" style="display: none;">
+                    <div class="form-group">
+                        <label>Select Group</label>
+                        <select id="expense-group"></select>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">Save Expense</button>
+            </form>
+
+            <nav class="bottom-nav">
+                <button class="nav-item" onclick="showScreen('dashboard-screen')">
+                    <span>🏠</span>
+                    <span>Home</span>
+                </button>
+                <button class="nav-item" onclick="showScreen('transactions-screen')">
+                    <span>📝</span>
+                    <span>Transactions</span>
+                </button>
+                <button class="nav-item add-btn active" onclick="showScreen('add-expense-screen')">
+                    <span>+</span>
+                </button>
+                <button class="nav-item" onclick="showScreen('goals-screen')">
+                    <span>🎯</span>
+                    <span>Goals</span>
+                </button>
+                <button class="nav-item" onclick="showScreen('profile-screen')">
+                    <span>👤</span>
+                    <span>Profile</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Goals Screen -->
+        <div id="goals-screen" class="screen">
+            <header class="screen-header">
+                <button class="back-btn" onclick="showScreen('dashboard-screen')">←</button>
+                <h2>Savings Goals</h2>
+                <button class="icon-btn" onclick="showAddGoalModal()">+</button>
+            </header>
+
+            <div id="goals-list" class="goals-list"></div>
+
+            <button class="btn btn-secondary btn-block" onclick="showWhatIfCalculator()" style="margin: 20px;">
+                🧮 What-If Savings Calculator
+            </button>
+
+            <nav class="bottom-nav">
+                <button class="nav-item" onclick="showScreen('dashboard-screen')">
+                    <span>🏠</span>
+                    <span>Home</span>
+                </button>
+                <button class="nav-item" onclick="showScreen('transactions-screen')">
+                    <span>📝</span>
+                    <span>Transactions</span>
+                </button>
+                <button class="nav-item add-btn" onclick="showScreen('add-expense-screen')">
+                    <span>+</span>
+                </button>
+                <button class="nav-item active" onclick="showScreen('goals-screen')">
+                    <span>🎯</span>
+                    <span>Goals</span>
+                </button>
+                <button class="nav-item" onclick="showScreen('profile-screen')">
+                    <span>👤</span>
+                    <span>Profile</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Profile Screen -->
+        <div id="profile-screen" class="screen">
+            <header class="screen-header">
+                <button class="back-btn" onclick="showScreen('dashboard-screen')">←</button>
+                <h2>Profile</h2>
+                <div></div>
+            </header>
+
+            <div class="profile-container">
+                <div class="profile-photo-section">
+                    <img id="profile-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%236366f1'/%3E%3Ctext x='50' y='50' text-anchor='middle' dy='.3em' fill='white' font-size='40' font-family='Arial'%3EU%3C/text%3E%3C/svg%3E" alt="Profile" class="avatar-large">
+                    <input type="file" id="photo-upload" accept="image/*" style="display: none;" onchange="uploadPhoto(event)">
+                    <button class="btn btn-secondary" onclick="document.getElementById('photo-upload').click()">Change Photo</button>
+                </div>
+
+                <div class="profile-form">
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" id="profile-name" placeholder="Your name">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Monthly Budget (₹)</label>
+                        <input type="number" id="profile-budget" placeholder="0" step="100">
+                    </div>
+
+                    <button class="btn btn-primary btn-block" onclick="saveProfile()">Save Profile</button>
+                </div>
+
+                <div class="profile-section">
+                    <h3>Achievements</h3>
+                    <div id="achievements-list" class="achievements-grid"></div>
+                </div>
+
+                <div class="profile-section">
+                    <h3>Groups</h3>
+                    <div id="groups-list"></div>
+                    <button class="btn btn-secondary btn-block" onclick="showScreen('groups-screen')">Manage Groups</button>
+                </div>
+
+                <div class="profile-section">
+                    <h3>Data Management</h3>
+                    <button class="btn btn-outline btn-block" onclick="exportData()">📤 Export Data (Excel)</button>
+                    <button class="btn btn-outline btn-block" onclick="document.getElementById('import-file').click()">📥 Import Data</button>
+                    <input type="file" id="import-file" accept=".xlsx,.xls" style="display: none;" onchange="importData(event)">
+                    <button class="btn btn-outline btn-block" onclick="clearData()">🗑️ Clear All Data</button>
+                    <button class="btn btn-danger btn-block" onclick="resetApp()">⚠️ Reset App</button>
+                </div>
+            </div>
+
+            <nav class="bottom-nav">
+                <button class="nav-item" onclick="showScreen('dashboard-screen')">
+                    <span>🏠</span>
+                    <span>Home</span>
+                </button>
+                <button class="nav-item" onclick="showScreen('transactions-screen')">
+                    <span>📝</span>
+                    <span>Transactions</span>
+                </button>
+                <button class="nav-item add-btn" onclick="showScreen('add-expense-screen')">
+                    <span>+</span>
+                </button>
+                <button class="nav-item" onclick="showScreen('goals-screen')">
+                    <span>🎯</span>
+                    <span>Goals</span>
+                </button>
+                <button class="nav-item active" onclick="showScreen('profile-screen')">
+                    <span>👤</span>
+                    <span>Profile</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Groups Screen -->
+        <div id="groups-screen" class="screen">
+            <header class="screen-header">
+                <button class="back-btn" onclick="showScreen('profile-screen')">←</button>
+                <h2>Groups</h2>
+                <button class="icon-btn" onclick="showCreateGroupModal()">+</button>
+            </header>
+
+            <div id="groups-container" class="groups-container"></div>
+
+            <nav class="bottom-nav">
+                <button class="nav-item" onclick="showScreen('dashboard-screen')">
+                    <span>🏠</span>
+                    <span>Home</span>
+                </button>
+                <button class="nav-item" onclick="showScreen('transactions-screen')">
+                    <span>📝</span>
+                    <span>Transactions</span>
+                </button>
+                <button class="nav-item add-btn" onclick="showScreen('add-expense-screen')">
+                    <span>+</span>
+                </button>
+                <button class="nav-item" onclick="showScreen('goals-screen')">
+                    <span>🎯</span>
+                    <span>Goals</span>
+                </button>
+                <button class="nav-item" onclick="showScreen('profile-screen')">
+                    <span>👤</span>
+                    <span>Profile</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Join Group Screen -->
+        <div id="join-group-screen" class="screen">
+            <header class="screen-header">
+                <button class="back-btn" onclick="showScreen('landing-screen')">←</button>
+                <h2>Join Group</h2>
+                <div></div>
+            </header>
+
+            <div class="form-container">
+                <div class="form-group">
+                    <label>Group Code</label>
+                    <input type="text" id="join-group-code" placeholder="Enter 6-digit code">
+                </div>
+                <button class="btn btn-primary btn-block" onclick="joinGroup()">Join Group</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="modal-overlay" class="modal-overlay" onclick="closeModal()"></div>
+    
+    <div id="achievement-popup" class="achievement-popup">
+        <div class="achievement-content">
+            <div class="achievement-icon" id="achievement-icon">🎉</div>
+            <h3 id="achievement-title">Achievement Unlocked!</h3>
+            <p id="achievement-description"></p>
+        </div>
+    </div>
+
+    <div id="reward-sticker" class="reward-sticker">
+        <div class="sticker-content">
+            <div class="sticker-emoji">🌟</div>
+            <p class="sticker-text"></p>
+        </div>
+    </div>
+
+    <div id="goal-modal" class="modal">
+        <div class="modal-content">
+            <h3>New Savings Goal</h3>
+            <div class="form-group">
+                <label>Goal Name</label>
+                <input type="text" id="goal-name" placeholder="e.g., New Laptop">
+            </div>
+            <div class="form-group">
+                <label>Target Amount (₹)</label>
+                <input type="number" id="goal-target" placeholder="0" step="100">
+            </div>
+            <div class="form-group">
+                <label>Icon</label>
+                <select id="goal-icon">
+                    <option value="💰">💰 Money</option>
+                    <option value="🏠">🏠 House</option>
+                    <option value="🚗">🚗 Car</option>
+                    <option value="✈️">✈️ Travel</option>
+                    <option value="💻">💻 Gadget</option>
+                    <option value="🎓">🎓 Education</option>
+                    <option value="💍">💍 Wedding</option>
+                    <option value="🎯">🎯 Other</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="createGoal()">Create Goal</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="whatif-modal" class="modal">
+        <div class="modal-content">
+            <h3>What-If Savings Calculator</h3>
+            <div class="form-group">
+                <label>Category</label>
+                <select id="whatif-category">
+                    <option value="Food">🍔 Food</option>
+                    <option value="Transport">🚗 Transport</option>
+                    <option value="Shopping">🛍️ Shopping</option>
+                    <option value="Entertainment">🎬 Entertainment</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Monthly Reduction (₹)</label>
+                <input type="number" id="whatif-amount" placeholder="500" step="50">
+            </div>
+            <div id="whatif-results" class="whatif-results"></div>
+            <div class="modal-actions">
+                <button class="btn btn-primary btn-block" onclick="calculateWhatIf()">Calculate</button>
+                <button class="btn btn-secondary btn-block" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="group-modal" class="modal">
+        <div class="modal-content">
+            <h3>Create Group</h3>
+            <div class="form-group">
+                <label>Group Name</label>
+                <input type="text" id="new-group-name" placeholder="e.g., Roommates">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="createGroup()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="contribute-modal" class="modal">
+        <div class="modal-content">
+            <h3>Contribute to Goal</h3>
+            <p id="contribute-goal-name"></p>
+            <div class="form-group">
+                <label>Amount (₹)</label>
+                <input type="number" id="contribute-amount" placeholder="0" step="10">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="contributeToGoal()">Contribute</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-group-modal" class="modal">
+        <div class="modal-content">
+            <h3>Edit Group</h3>
+            <div class="form-group">
+                <label>Group Name</label>
+                <input type="text" id="edit-group-name" placeholder="Group name">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveGroupEdit()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="sync-modal" class="modal">
+        <div class="modal-content">
+            <h3 id="sync-group-name">Sync Group</h3>
+            <p style="margin-bottom: 20px; color: var(--text-secondary);">Share group data with members for real-time sync without a server.</p>
+            <button class="btn btn-primary btn-block" onclick="exportGroupData(appState.currentGroupId); closeModal()">📤 Export Group Data</button>
+            <button class="btn btn-secondary btn-block" onclick="importGroupData(); closeModal()">📥 Import from Member</button>
+            <p style="margin-top: 16px; font-size: 13px; color: var(--text-secondary);">Export: Download group data file and share with members<br>Import: Load data file from other members to sync</p>
+        </div>
+    </div>
+
+    <input type="file" id="import-group-file" accept=".json" style="display: none;" onchange="handleGroupImport(event)">
+
+    <!-- Branding Footer -->
+    <div class="branding-footer">
+        <a href="https://www.linkedin.com/in/vipin-dewangan-finance" target="_blank" rel="noopener noreferrer">
+            Made by VIPIN DEWANGAN
+        </a>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
