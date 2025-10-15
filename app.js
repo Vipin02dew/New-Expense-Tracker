@@ -1,21 +1,3 @@
-import { auth, provider, signInWithPopup, signOut } from "./firebase.js";
-
-const loginBtn = document.getElementById("loginBtn");
-const logoutBtn = document.getElementById("logoutBtn");
-
-loginBtn?.addEventListener("click", () => {
-  signInWithPopup(auth, provider)
-    .then(result => {
-      const user = result.user;
-      alert(`Welcome ${user.displayName}`);
-      console.log("User Info:", user);
-    })
-    .catch(err => console.error("Login error:", err));
-});
-
-logoutBtn?.addEventListener("click", () => {
-  signOut(auth).then(() => alert("Logged out"));
-});
 let appState = {
     user: {
         name: 'User',
